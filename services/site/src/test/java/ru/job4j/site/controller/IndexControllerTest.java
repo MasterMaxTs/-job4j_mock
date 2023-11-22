@@ -3,11 +3,11 @@ package ru.job4j.site.controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.ui.ConcurrentModel;
 import ru.job4j.site.SiteSrv;
 import ru.job4j.site.domain.Breadcrumb;
@@ -36,7 +36,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(classes = SiteSrv.class)
 @AutoConfigureMockMvc
 class IndexControllerTest {
-    @Autowired
     private MockMvc mockMvc;
     @MockBean
     private CategoriesService categoriesService;
@@ -47,15 +46,20 @@ class IndexControllerTest {
     @MockBean
     private AuthService authService;
     @MockBean
+    private ProfilesService profilesService;
+    @MockBean
     private NotificationService notificationService;
 
     private IndexController indexController;
 
     @BeforeEach
     void initTest() {
-        this.indexController = new IndexController(
-                categoriesService, interviewsService, authService, notificationService
-        );
+        this.indexController = new IndexController(categoriesService,
+                                                    interviewsService,
+                                                    authService,
+                                                    profilesService,
+                                                    notificationService);
+        this.mockMvc = MockMvcBuilders.standaloneSetup(indexController).build();
     }
 
     @Test
