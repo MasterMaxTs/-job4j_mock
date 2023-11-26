@@ -104,7 +104,7 @@
                                 </small>
                             </td>
                             <td>
-                                <div th:each="mapEntry: ${map_category_id_counts_by_new_interview}">
+                                <div th:each="mapEntry: ${map_of_category_id_count_by_new_interview}">
                                     <span class="badge bg-success" th:text="${category.id == mapEntry.key ? 'Новых: ' + mapEntry.value : 'Новых: 0'}">Новых: 100</span>
                                 </div>
                             </td>

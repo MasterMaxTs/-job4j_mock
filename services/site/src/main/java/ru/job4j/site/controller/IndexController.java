@@ -6,12 +6,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import ru.job4j.site.dto.CategoryDTO;
 import ru.job4j.site.dto.ProfileDTO;
 import ru.job4j.site.service.*;
+import ru.job4j.site.utility.Utility;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -22,7 +21,6 @@ import static ru.job4j.site.controller.RequestResponseTools.getToken;
 @Slf4j
 public class IndexController {
     private final CategoriesService categoriesService;
-    private final TopicsService topicsService;
     private final InterviewsService interviewsService;
     private final AuthService authService;
     private final ProfilesService profilesService;
@@ -45,7 +43,7 @@ public class IndexController {
         } catch (Exception e) {
             log.error("Remote application not responding. Error: {}. {}, ", e.getCause(), e.getMessage());
         }
-        var interviews = interviewsService.getByType(1);
+        var interviews = interviewsService.getByType(Utility.INTERVIEW_TYPE_NEW);
         model.addAttribute("new_interviews", interviews);
         model.addAttribute("authors",
                 interviews.stream()
@@ -55,12 +53,8 @@ public class IndexController {
                             return profileOptional.isPresent() ? profileOptional.get().getUsername()
                                     : username;
                         }).collect(Collectors.toList()));
-        model.addAttribute("map_category_id_counts_by_new_interview",
-                interviews.stream()
-                        .map(i ->
-                                topicsService.getById(i.getTopicId()).getCategory())
-                        .collect(Collectors.groupingBy(CategoryDTO::getId,
-                                Collectors.counting())));
+        model.addAttribute("map_of_category_id_count_by_new_interview",
+                interviewsService.getCountsOfNewInterviewsPerCategory());
         return "index";
     }
 }

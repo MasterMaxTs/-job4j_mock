@@ -19,7 +19,6 @@ import ru.job4j.site.service.*;
 import java.util.List;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -41,8 +40,6 @@ class IndexControllerTest {
     @MockBean
     private CategoriesService categoriesService;
     @MockBean
-    private TopicsService topicsService;
-    @MockBean
     private InterviewsService interviewsService;
     @MockBean
     private AuthService authService;
@@ -56,7 +53,6 @@ class IndexControllerTest {
     @BeforeEach
     void initTest() {
         this.indexController = new IndexController(categoriesService,
-                                                    topicsService,
                                                     interviewsService,
                                                     authService,
                                                     profilesService,
@@ -91,11 +87,8 @@ class IndexControllerTest {
                 "interview2", "description2", "contact2",
                 "30.02.2024", "09.10.2023", 1);
         var listInterviews = List.of(firstInterview, secondInterview);
-        when(topicsService.getByCategory(cat1.getId())).thenReturn(List.of(topicDTO1));
-        when(topicsService.getByCategory(cat2.getId())).thenReturn(List.of(topicDTO2));
         when(categoriesService.getMostPopular()).thenReturn(listCat);
         when(interviewsService.getByType(1)).thenReturn(listInterviews);
-        when(topicsService.getById(1)).thenReturn(topicDTO1);
         var listBread = List.of(new Breadcrumb("Главная", "/"));
         var model = new ConcurrentModel();
         var view = indexController.getIndexPage(model, null);
