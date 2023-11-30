@@ -8,6 +8,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import ru.job4j.site.dto.ProfileDTO;
 import ru.job4j.site.service.*;
+import ru.job4j.site.utility.Utility;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Optional;
@@ -42,7 +43,7 @@ public class IndexController {
         } catch (Exception e) {
             log.error("Remote application not responding. Error: {}. {}, ", e.getCause(), e.getMessage());
         }
-        var interviews = interviewsService.getByType(1);
+        var interviews = interviewsService.getByType(Utility.INTERVIEW_TYPE_NEW);
         model.addAttribute("new_interviews", interviews);
         model.addAttribute("authors",
                 interviews.stream()
@@ -52,6 +53,8 @@ public class IndexController {
                             return profileOptional.isPresent() ? profileOptional.get().getUsername()
                                     : username;
                         }).collect(Collectors.toList()));
+        model.addAttribute("map_of_category_id_count_by_new_interview",
+                interviewsService.getCountsOfNewInterviewsPerCategory());
         return "index";
     }
 }

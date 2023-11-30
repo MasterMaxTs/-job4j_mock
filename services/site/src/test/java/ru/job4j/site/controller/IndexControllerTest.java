@@ -40,8 +40,6 @@ class IndexControllerTest {
     @MockBean
     private CategoriesService categoriesService;
     @MockBean
-    private TopicsService topicsService;
-    @MockBean
     private InterviewsService interviewsService;
     @MockBean
     private AuthService authService;
@@ -80,6 +78,7 @@ class IndexControllerTest {
         topicDTO2.setName("topic2");
         var cat1 = new CategoryDTO(1, "name1");
         var cat2 = new CategoryDTO(2, "name2");
+        topicDTO1.setCategory(cat1);
         var listCat = List.of(cat1, cat2);
         var firstInterview = new InterviewDTO(1, 1, 1, 1,
                 "interview1", "description1", "contact1",
@@ -88,8 +87,6 @@ class IndexControllerTest {
                 "interview2", "description2", "contact2",
                 "30.02.2024", "09.10.2023", 1);
         var listInterviews = List.of(firstInterview, secondInterview);
-        when(topicsService.getByCategory(cat1.getId())).thenReturn(List.of(topicDTO1));
-        when(topicsService.getByCategory(cat2.getId())).thenReturn(List.of(topicDTO2));
         when(categoriesService.getMostPopular()).thenReturn(listCat);
         when(interviewsService.getByType(1)).thenReturn(listInterviews);
         var listBread = List.of(new Breadcrumb("Главная", "/"));

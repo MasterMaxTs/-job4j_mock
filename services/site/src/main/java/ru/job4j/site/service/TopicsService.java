@@ -22,11 +22,14 @@ public class TopicsService {
         });
     }
 
-    public TopicDTO getById(int id) throws JsonProcessingException {
-        var text = new RestAuthCall("http://localhost:9902/topic/" + id).get();
-        var mapper = new ObjectMapper();
-        return mapper.readValue(text, new TypeReference<>() {
-        });
+    public TopicDTO getById(int id) {
+        try {
+            var text = new RestAuthCall("http://localhost:9902/topic/" + id).get();
+            var mapper = new ObjectMapper();
+            return mapper.readValue(text, new TypeReference<>() {});
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public TopicDTO create(String token, TopicLiteDTO topicLite) throws JsonProcessingException {

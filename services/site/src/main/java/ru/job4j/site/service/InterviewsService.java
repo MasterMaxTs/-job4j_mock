@@ -8,9 +8,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import ru.job4j.site.dto.InterviewDTO;
 import ru.job4j.site.util.RestPageImpl;
+import ru.job4j.site.utility.Utility;
 
-import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class InterviewsService {
@@ -30,6 +31,20 @@ public class InterviewsService {
     public List<InterviewDTO> getByType(int type) throws JsonProcessingException {
         var text = new RestAuthCall(String.format("http://localhost:9912/interviews/%d", type))
                 .get();
+        var mapper = new ObjectMapper();
+        return mapper.readValue(text, new TypeReference<>() {
+        });
+    }
+
+    public Map<Integer, Long> getCountsOfNewInterviewsPerCategory() throws JsonProcessingException {
+        var params = new StringBuilder();
+        var newInterviews = getByType(Utility.INTERVIEW_TYPE_NEW);
+        newInterviews.forEach(i -> params.append("topic_id=").append(i.getTopicId()).append("&"));
+        var text =
+                new RestAuthCall(String
+                        .format("http://localhost:9902/topics"
+                                + "/findCountsOfCategoryIdByTopicIds?%s", params))
+                        .get();
         var mapper = new ObjectMapper();
         return mapper.readValue(text, new TypeReference<>() {
         });
