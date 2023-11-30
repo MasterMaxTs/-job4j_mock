@@ -13,16 +13,19 @@ import java.util.List;
 @Service
 public class CategoriesService {
     private final TopicsService topicsService;
+    private final RestAuthCall restAuthCall;
 
     public List<CategoryDTO> getAll() throws JsonProcessingException {
-        var text = new RestAuthCall("http://localhost:9902/categories/").get();
+        restAuthCall.setUrl("http://localhost:9902/categories/");
+        var text = restAuthCall.get();
         var mapper = new ObjectMapper();
         return mapper.readValue(text, new TypeReference<>() {
         });
     }
 
     public List<CategoryDTO> getPopularFromDesc() throws JsonProcessingException {
-        var text = new RestAuthCall("http://localhost:9902/categories/most_pop").get();
+        restAuthCall.setUrl("http://localhost:9902/categories/most_pop");
+        var text = restAuthCall.get();
         var mapper = new ObjectMapper();
         return mapper.readValue(text, new TypeReference<>() {
         });
@@ -30,25 +33,21 @@ public class CategoriesService {
 
     public CategoryDTO create(String token, CategoryDTO category) throws JsonProcessingException {
         var mapper = new ObjectMapper();
-        var out = new RestAuthCall("http://localhost:9902/category/").post(
-                token,
-                mapper.writeValueAsString(category)
-        );
+        restAuthCall.setUrl("http://localhost:9902/category/");
+        var out = restAuthCall.post(token, mapper.writeValueAsString(category));
         return mapper.readValue(out, CategoryDTO.class);
     }
 
     public void update(String token, CategoryDTO category) throws JsonProcessingException {
         var mapper = new ObjectMapper();
-        new RestAuthCall("http://localhost:9902/category/").put(
-                token,
-                mapper.writeValueAsString(category)
-        );
+        restAuthCall.setUrl("http://localhost:9902/category/");
+        restAuthCall.put(token, mapper.writeValueAsString(category));
     }
 
     public void updateStatistic(String token, int categoryId) throws JsonProcessingException {
         var mapper = new ObjectMapper();
-        new RestAuthCall("http://localhost:9902/category/statistic").put(
-                token, mapper.writeValueAsString(categoryId));
+        restAuthCall.setUrl("http://localhost:9902/category/statistic");
+        restAuthCall.put(token, mapper.writeValueAsString(categoryId));
     }
 
     public List<CategoryDTO> getAllWithTopics() throws JsonProcessingException {

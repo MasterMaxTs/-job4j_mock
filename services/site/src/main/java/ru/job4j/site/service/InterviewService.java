@@ -3,6 +3,7 @@ package ru.job4j.site.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.job4j.site.domain.StatusInterview;
 import ru.job4j.site.domain.StatusWisher;
@@ -15,36 +16,31 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@AllArgsConstructor
 public class InterviewService {
     private static final String URL_MOCK = "http://localhost:9912/interview/";
     private final ProfilesService profilesService;
-
-    public InterviewService(ProfilesService profilesService) {
-        this.profilesService = profilesService;
-    }
+    private final RestAuthCall restAuthCall;
 
     public InterviewDTO create(String token, InterviewDTO interviewDTO) throws JsonProcessingException {
         interviewDTO.setStatus(StatusInterview.IS_NEW.getId());
         var mapper = new ObjectMapper();
-        var out = new RestAuthCall(URL_MOCK).post(
-                token,
-                mapper.writeValueAsString(interviewDTO)
-        );
+        restAuthCall.setUrl(URL_MOCK);
+        var out = restAuthCall.post(token, mapper.writeValueAsString(interviewDTO));
         return mapper.readValue(out, InterviewDTO.class);
     }
 
     public InterviewDTO getById(String token, int id) throws JsonProcessingException {
-        var text = new RestAuthCall(String.format("%s%d", URL_MOCK, id))
-                .get(token);
+        restAuthCall.setUrl(String.format("%s%d", URL_MOCK, id));
+        var text = restAuthCall.get(token);
         return new ObjectMapper().readValue(text, new TypeReference<>() {
         });
     }
 
     public void update(String token, InterviewDTO interviewDTO) throws JsonProcessingException {
         var mapper = new ObjectMapper();
-        new RestAuthCall(URL_MOCK).update(
-                token,
-                mapper.writeValueAsString(interviewDTO));
+        restAuthCall.setUrl(URL_MOCK);
+        restAuthCall.update(token, mapper.writeValueAsString(interviewDTO));
     }
 
     /**
@@ -55,8 +51,8 @@ public class InterviewService {
      * @param newStatus int New status
      */
     public void updateStatus(String token, int id, int newStatus) {
-        new RestAuthCall(String.format("%sstatus/?id=%d&newStatus=%d", URL_MOCK, id, newStatus))
-                .put(token, "");
+        restAuthCall.setUrl(String.format("%sstatus/?id=%d&newStatus=%d", URL_MOCK, id, newStatus));
+        restAuthCall.put(token, "");
     }
 
     /**
