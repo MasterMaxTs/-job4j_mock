@@ -1,15 +1,18 @@
 package ru.checkdev.notification.telegram.action;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
-import ru.checkdev.notification.domain.PersonDTO;
-import ru.checkdev.notification.telegram.config.TgConfig;
-import ru.checkdev.notification.telegram.service.TgAuthCallWebClint;
+import ru.checkdev.notification.dto.PersonDTO;
+import ru.checkdev.notification.telegram.service.TgAuthCallWebClient;
+import ru.checkdev.notification.telegram.util.TgEmailValidatorUtil;
+import ru.checkdev.notification.telegram.util.TgPasswordGeneratorUtil;
 
 import java.util.Calendar;
+import java.util.Map;
 
 /**
  * 3. Мидл
@@ -21,16 +24,19 @@ import java.util.Calendar;
 @AllArgsConstructor
 @Slf4j
 public class RegAction implements Action {
-    private static final String ERROR_OBJECT = "error";
+
+    private static final String DELIMITER = "/";
+
     private static final String URL_AUTH_REGISTRATION = "/registration";
-    private final TgConfig tgConfig = new TgConfig("tg/", 8);
-    private final TgAuthCallWebClint authCallWebClint;
+
+    private final TgAuthCallWebClient authCallWebClint;
+
     private final String urlSiteAuth;
 
     @Override
     public BotApiMethod<Message> handle(Message message) {
         var chatId = message.getChatId().toString();
-        var text = "Введите email для регистрации:";
+        var text = "Введите ваше ФИО/email для регистрации:";
         return new SendMessage(chatId, text);
     }
 
@@ -49,41 +55,51 @@ public class RegAction implements Action {
     @Override
     public BotApiMethod<Message> callback(Message message) {
         var chatId = message.getChatId().toString();
-        var email = message.getText();
-        var text = "";
+        var stringBuilder = new StringBuilder();
         var sl = System.lineSeparator();
-
-        if (!tgConfig.isEmail(email)) {
-            text = "Email: " + email + " не корректный." + sl
-                   + "попробуйте снова." + sl
-                   + "/new";
-            return new SendMessage(chatId, text);
+        var input = message.getText().split(DELIMITER);
+        if (input.length == 1) {
+            stringBuilder
+                    .append("Ошибка ввода данных: ").append(sl)
+                    .append("Введите ваше ФИО/ваш email").append(sl)
+                    .append("/new");
+            return new SendMessage(chatId, stringBuilder.toString());
         }
-
-        var password = tgConfig.getPassword();
-        var person = new PersonDTO(email, password, true, null,
+        var username = input[0];
+        var email = input[1];
+        if (!TgEmailValidatorUtil.isEmail(email)) {
+            stringBuilder
+                    .append("Email: ").append(email).append(" не корректный.").append(sl)
+                    .append("попробуйте снова.").append(sl)
+                    .append("/new");
+            return new SendMessage(chatId, stringBuilder.toString());
+        }
+        var password = TgPasswordGeneratorUtil.getPassword();
+        var person = new PersonDTO(username, email, password, true, null,
                 Calendar.getInstance());
         Object result;
         try {
             result = authCallWebClint.doPost(URL_AUTH_REGISTRATION, person).block();
         } catch (Exception e) {
             log.error("WebClient doPost error: {}", e.getMessage());
-            text = "Сервис не доступен попробуйте позже" + sl
-                   + "/start";
-            return new SendMessage(chatId, text);
+            stringBuilder
+                    .append("Сервис не доступен попробуйте позже").append(sl)
+                    .append("/start");
+            return new SendMessage(chatId, stringBuilder.toString());
         }
-
-        var mapObject = tgConfig.getObjectToMap(result);
-
-        if (mapObject.containsKey(ERROR_OBJECT)) {
-            text = "Ошибка регистрации: " + mapObject.get(ERROR_OBJECT);
-            return new SendMessage(chatId, text);
+        var mapObject = new ObjectMapper().convertValue(result, Map.class);
+        if (mapObject.containsKey(ERROR_ACTION_KEY)) {
+            stringBuilder
+                    .append("Ошибка регистрации: ").append(mapObject.get(ERROR_ACTION_KEY))
+                    .append(sl).append("/new");
+            return new SendMessage(chatId, stringBuilder.toString());
         }
-
-        text = "Вы зарегистрированы: " + sl
-               + "Логин: " + email + sl
-               + "Пароль: " + password + sl
-               + urlSiteAuth;
-        return new SendMessage(chatId, text);
+        stringBuilder
+                .append("Вы зарегистрированы: ").append(sl)
+                .append("Логин: ").append(email).append(sl)
+                .append("Пароль: ").append(password).append(sl)
+                .append("Ссылка для входа: ").append(urlSiteAuth).append(sl)
+                .append("/start");
+        return new SendMessage(chatId, stringBuilder.toString());
     }
 }

@@ -1,11 +1,11 @@
 package ru.checkdev.notification.telegram.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
-import ru.checkdev.notification.domain.PersonDTO;
+import ru.checkdev.notification.dto.PersonDTO;
 
 /**
  * 3. Мидл
@@ -16,11 +16,13 @@ import ru.checkdev.notification.domain.PersonDTO;
  */
 @Service
 @Slf4j
-public class TgAuthCallWebClint {
-    private WebClient webClient;
+public class TgAuthCallWebClient {
 
-    public TgAuthCallWebClint(@Value("${server.auth}") String urlAuth) {
-        this.webClient = WebClient.create(urlAuth);
+    private final WebClient webClient;
+
+    @Autowired
+    public TgAuthCallWebClient(WebClient webClient) {
+        this.webClient = webClient;
     }
 
     /**
@@ -52,10 +54,7 @@ public class TgAuthCallWebClint {
                 .bodyValue(personDTO)
                 .retrieve()
                 .bodyToMono(Object.class)
-                .doOnError(err -> log.error("API not found: {}", err.getMessage()));
-    }
-
-    public void setWebClient(WebClient webClient) {
-        this.webClient = webClient;
+                .doOnError(err ->
+                    log.error("API not found: {}", err.getMessage()));
     }
 }

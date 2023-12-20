@@ -7,7 +7,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
-import ru.checkdev.notification.domain.PersonDTO;
+import ru.checkdev.notification.dto.PersonDTO;
 
 import java.util.Calendar;
 import java.util.Collections;
@@ -23,7 +23,7 @@ import static org.mockito.Mockito.when;
  * @since 06.10.2023
  */
 @ExtendWith(MockitoExtension.class)
-class TgAuthCallWebClintTest {
+class TgAuthCallWebClientTest {
     private static final String URL = "http://tetsurl:15000";
     @Mock
     private WebClient webClientMock;
@@ -38,12 +38,11 @@ class TgAuthCallWebClintTest {
     @Mock
     private WebClient.ResponseSpec responseMock;
 
-    private TgAuthCallWebClint tgAuthCallWebClint;
+    private TgAuthCallWebClient tgAuthCallWebClient;
 
     @BeforeEach
     void setUp() {
-        tgAuthCallWebClint = new TgAuthCallWebClint(URL);
-        tgAuthCallWebClint.setWebClient(webClientMock);
+        tgAuthCallWebClient = new TgAuthCallWebClient(webClientMock);
     }
 
 
@@ -55,12 +54,13 @@ class TgAuthCallWebClintTest {
                 .set(Calendar.MONTH, Calendar.OCTOBER)
                 .set(Calendar.YEAR, 2023)
                 .build();
-        var personDto = new PersonDTO("mail", "password", true, Collections.EMPTY_LIST, created);
+        var personDto = new PersonDTO("username", "mail", "password", true,
+                Collections.EMPTY_LIST, created);
         when(webClientMock.get()).thenReturn(requestHeadersUriMock);
         when(requestHeadersUriMock.uri("/person/" + personId)).thenReturn(requestHeadersMock);
         when(requestHeadersMock.retrieve()).thenReturn(responseMock);
         when(responseMock.bodyToMono(PersonDTO.class)).thenReturn(Mono.just(personDto));
-        PersonDTO actual = tgAuthCallWebClint.doGet("/person/" + personId).block();
+        PersonDTO actual = tgAuthCallWebClient.doGet("/person/" + personId).block();
         assertThat(actual).isEqualTo(personDto);
     }
 
@@ -71,7 +71,7 @@ class TgAuthCallWebClintTest {
         when(requestHeadersUriMock.uri("/person/" + personId)).thenReturn(requestHeadersMock);
         when(requestHeadersMock.retrieve()).thenReturn(responseMock);
         when(responseMock.bodyToMono(PersonDTO.class)).thenReturn(Mono.error(new Throwable("Error")));
-        assertThatThrownBy(() -> tgAuthCallWebClint.doGet("/person/" + personId).block())
+        assertThatThrownBy(() -> tgAuthCallWebClient.doGet("/person/" + personId).block())
                 .isInstanceOf(Throwable.class)
                 .hasMessageContaining("Error");
     }
@@ -83,13 +83,14 @@ class TgAuthCallWebClintTest {
                 .set(Calendar.MONTH, Calendar.OCTOBER)
                 .set(Calendar.YEAR, 2023)
                 .build();
-        var personDto = new PersonDTO("mail", "password", true, null, created);
+        var personDto = new PersonDTO("username", "mail", "password", true,
+                null, created);
         when(webClientMock.post()).thenReturn(requestBodyUriMock);
         when(requestBodyUriMock.uri("/person/created")).thenReturn(requestBodyMock);
         when(requestBodyMock.bodyValue(personDto)).thenReturn(requestHeadersMock);
         when(requestHeadersMock.retrieve()).thenReturn(responseMock);
         when(responseMock.bodyToMono(Object.class)).thenReturn(Mono.just(personDto));
-        Mono<Object> objectMono = tgAuthCallWebClint.doPost("/person/created", personDto);
+        Mono<Object> objectMono = tgAuthCallWebClient.doPost("/person/created", personDto);
         PersonDTO actual = (PersonDTO) objectMono.block();
         assertThat(actual).isEqualTo(personDto);
     }

@@ -1,9 +1,11 @@
 package ru.checkdev.auth.web.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.checkdev.auth.domain.Profile;
+import ru.checkdev.auth.dto.CredentialsDTO;
+import ru.checkdev.auth.dto.RegErrorDTO;
 import ru.checkdev.auth.service.PersonService;
 
 import javax.servlet.http.HttpServletRequest;
@@ -15,14 +17,9 @@ import java.util.Optional;
  * @since 26.09.2016
  */
 @RestController
+@RequiredArgsConstructor
 public class AuthController {
     private final PersonService persons;
-    private final String ping = "{}";
-
-    @Autowired
-    public AuthController(final PersonService persons) {
-        this.persons = persons;
-    }
 
     @RequestMapping("/user")
     public Principal user(Principal user) {
@@ -31,7 +28,8 @@ public class AuthController {
 
     @GetMapping("/ping")
     public String ping() {
-        return this.ping;
+        String ping = "{}";
+        return ping;
     }
 
     @GetMapping("/auth/activated/{key}")
@@ -53,34 +51,32 @@ public class AuthController {
 
     @PostMapping("/registration")
     public Object registration(@RequestBody Profile profile) {
-        Optional<Profile> result = this.persons.reg(profile);
-        return result.<Object>map(prs -> new Object() {
-            public Profile getPerson() {
-                return prs;
-            }
-        }).orElseGet(() -> new Object() {
-            public String getError() {
-                return String.format("Пользователь с почтой %s уже существует.", profile.getEmail());
-            }
-        });
+        Optional<Profile> result = this.persons.create(profile);
+        return result.map(prs -> (Object) prs)
+                .orElse(new RegErrorDTO(
+                                String.format("Пользователь с почтой %s "
+                                                + "уже существует! "
+                                        + "Укажите другой email.",
+                                        profile.getEmail()))
+                );
     }
 
     @PostMapping("/forgot")
     public Object forgot(@RequestBody Profile profile) {
+        String email = profile.getEmail();
+        String newRawPassword = profile.getPassword();
         Optional<Profile> result = this.persons.forgot(profile);
-        if (result.isPresent()) {
-            return new Object() {
-                public String getOk() {
-                    return "ok";
-                }
-            };
-        } else {
-            return new Object() {
-                public String getError() {
-                    return "E-mail не найден.";
-                }
-            };
-        }
+        return result
+                .stream()
+                .findFirst()
+                .map(pfl -> {
+                    CredentialsDTO credentials =
+                            new CredentialsDTO(pfl.getEmail(), newRawPassword);
+                    return (Object) credentials;
+                })
+                .orElse(new RegErrorDTO(
+                        String.format("Пользователь с почтой %s"
+                                + " не зарегистрирован в приложении!", email)));
     }
 
     @GetMapping("/revoke")

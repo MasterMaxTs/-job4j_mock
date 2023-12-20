@@ -2,6 +2,8 @@ package ru.checkdev.notification.domain;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import ru.checkdev.notification.dto.PersonDTO;
+import ru.checkdev.notification.dto.RoleDTO;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -22,7 +24,8 @@ class PersonDTOTest {
                 .setDate(2023, 10, 23)
                 .setTimeOfDay(20, 20, 20)
                 .build();
-        person = new PersonDTO("email", "password", true, roles, created);
+        person = new PersonDTO("username", "email", "password", true, roles,
+                created);
     }
 
     @Test

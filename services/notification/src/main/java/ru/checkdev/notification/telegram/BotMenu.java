@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @since 12.09.2023
  */
 public class BotMenu extends TelegramLongPollingBot {
+    public static final String UNKNOWN_COMMAND_KEY = "/unknown";
     private final Map<String, String> bindingBy = new ConcurrentHashMap<>();
     private final Map<String, Action> actions;
     private final String username;
@@ -52,6 +53,8 @@ public class BotMenu extends TelegramLongPollingBot {
                 var msg = actions.get(bindingBy.get(chatId)).callback(update.getMessage());
                 bindingBy.remove(chatId);
                 send(msg);
+            } else {
+                send(actions.get(UNKNOWN_COMMAND_KEY).handle(update.getMessage()));
             }
         }
     }

@@ -44,13 +44,14 @@ import java.util.*;
 @Service
 public class PersonService {
     private final Logger log = LoggerFactory.getLogger(PersonService.class);
-    private final PasswordEncoder encoding = new BCryptPasswordEncoder();
     private final PersonRepository persons;
+    private final PasswordEncoder encoding;
     private final Messenger msg;
 
     @Autowired
-    public PersonService(final PersonRepository persons, final Messenger msg) {
+    public PersonService(PersonRepository persons, PasswordEncoder encoding, Messenger msg) {
         this.persons = persons;
+        this.encoding = encoding;
         this.msg = msg;
     }
 
@@ -78,6 +79,12 @@ public class PersonService {
         return result;
     }
 
+    public void subscribe(Profile profile) {
+        Map<String, Object> keys = new HashMap<>();
+        keys.put("key", profile.getKey());
+        this.msg.send(new Notify(profile.getEmail(), keys, Notify.Type.REG.name()));
+    }
+
     public Optional<Profile> create(Profile profile) {
         Optional<Profile> result = Optional.empty();
         try {
@@ -89,6 +96,7 @@ public class PersonService {
                     )
             );
             profile.setPassword(this.encoding.encode(profile.getPassword()));
+            profile.setUpdated(Calendar.getInstance());
             result = Optional.of(this.persons.save(profile));
         } catch (DataIntegrityViolationException e) {
             log.error("not unique email {}", profile.getEmail());
@@ -129,15 +137,15 @@ public class PersonService {
 
     public Optional<Profile> forgot(Profile profile) {
         final Optional<Profile> result;
+        String newRawPassword = profile.getPassword();
         Profile find = this.persons.findByEmail(profile.getEmail());
         if (find == null) {
             result = Optional.empty();
         } else {
-            String password = RandomStringUtils.randomAlphabetic(8);
-            find.setPassword(this.encoding.encode(password));
+            find.setPassword(this.encoding.encode(newRawPassword));
             this.persons.save(find);
             Map<String, Object> keys = new HashMap<>();
-            keys.put("password", password);
+            keys.put("password", newRawPassword);
             this.msg.send(new Notify(profile.getEmail(), keys, Notify.Type.FORGOT.name()));
             result = Optional.of(profile);
         }

@@ -6,11 +6,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.crypto.password.StandardPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import ru.checkdev.auth.domain.Profile;
+import ru.checkdev.auth.dto.NotifyDTO;
+import ru.checkdev.auth.dto.RegErrorDTO;
 import ru.checkdev.auth.service.PersonService;
 import ru.checkdev.auth.service.RoleService;
 
@@ -28,14 +30,16 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/person")
 public class PersonController {
-    private final StandardPasswordEncoder encoding = new StandardPasswordEncoder();
     private final PersonService persons;
     private final RoleService roles;
+    private final PasswordEncoder encoder;
 
     @Autowired
-    public PersonController(final PersonService persons, RoleService roles) {
+    public PersonController(final PersonService persons, RoleService roles,
+                            PasswordEncoder encoder) {
         this.persons = persons;
         this.roles = roles;
+        this.encoder = encoder;
     }
 
     @GetMapping("/current")
@@ -112,7 +116,7 @@ public class PersonController {
                 .getUserAuthentication().getDetails()).get("username");
         Profile profileDb = persons.findById(profile.getId());
         if (email.equals(profileDb.getEmail())) {
-            profileDb.setPassword(this.encoding.encode(profile.getPassword()));
+            profileDb.setPassword(this.encoder.encode(profile.getPassword()));
             persons.save(profileDb);
         }
     }
@@ -121,8 +125,9 @@ public class PersonController {
     public ResponseEntity<String> changePass(@RequestBody Profile.Password password) {
         Profile profileDb = persons.findById(password.getId());
         String response;
-        if (this.encoding.matches(password.getPassword(), profileDb.getPassword())) {
-            profileDb.setPassword(this.encoding.encode(password.getNewPass()));
+        if (this.encoder.matches(password.getPassword(),
+                profileDb.getPassword())) {
+            profileDb.setPassword(this.encoder.encode(password.getNewPass()));
             persons.save(profileDb);
             response = "ok";
         } else {
@@ -146,5 +151,19 @@ public class PersonController {
         map.put("personsShowed", persons.findByShow(true, PageRequest.of(pageToShow, limit)));
         map.put("getTotal", persons.showed());
         return new ResponseEntity<>(map, HttpStatus.OK);
+    }
+
+    @PostMapping("/subscribe")
+    public Object subscribe(@RequestBody Profile profile) {
+        Optional<Profile> profileDb = persons.findByEmail(profile.getEmail());
+        return profileDb
+                .filter(pfl -> this.encoder.matches(profile.getPassword(), pfl.getPassword()))
+                .stream()
+                .findFirst()
+                .map(pfl -> {
+                            persons.subscribe(pfl);
+                            return (Object) new NotifyDTO("Вы успешно подписались "
+                                    + "на рассылку уведомлений"); })
+                .orElse(new RegErrorDTO("Email, password не корректны!"));
     }
 }

@@ -14,9 +14,4 @@ public class AuthSrv {
         application.addListeners(new ApplicationPidFileWriter("./auth.pid"));
         application.run();
     }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
 }

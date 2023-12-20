@@ -10,7 +10,11 @@ import org.telegram.telegrambots.meta.api.objects.Message;
  * @since 12.09.2023
  */
 public interface Action {
+
+    String ERROR_ACTION_KEY = Keys.ERROR_ACTION_KEY.getKeyName();
+
     BotApiMethod<Message> handle(Message message);
 
     BotApiMethod<Message> callback(Message message);
+
 }
